@@ -47,5 +47,9 @@ lib/config.dart
 
 .docs of the project/
 .vscode/
-.android
-.ios/
+android
+ios
+Proj (NPS) .code-workspace
+macos/
+windows/
+web/
