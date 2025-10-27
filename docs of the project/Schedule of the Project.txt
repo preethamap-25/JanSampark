@@ -1,0 +1,22 @@
+Deadline - 10th July 2024
+
+Week 1
+- 4W's must be recorded. 
+- An abstract which will have abstract(half page, 10-15 page). Brief intro 4-5 lines, 4-5 lines about the technology, 4-5 lines about the aim of the project. 
+- To include the features of the app. 
+
+Week 2 & 3
+- Focus on architecture, diagram without the pages.
+- Technologies used and database using.
+- Database design, (fields, attributes) and table() and class diagram.
+- Class diagram(name, attributes, properties).
+- Workflow of the app and each feature.
+
+Week 4,5 and 6 (Summer)
+- Writing the code for the app.
+
+Week 7
+- Deploy the app.
+
+Week 8
+- Debug the app and finalise the changes on the app.
