@@ -53,3 +53,5 @@ Proj (NPS) .code-workspace
 macos/
 windows/
 web/
+
+.gitignore
