@@ -82,6 +82,7 @@ To get started with JanSampark, follow these steps:
 ## Contributors
 
 - [Kiran Patel](https://github.com/patelkiran185)
+- [Preetham A](https://github.com/preethamap-25)
 
 ---
 
