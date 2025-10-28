@@ -45,7 +45,7 @@ node_modules/
 .env
 lib/config.dart
 
-.docs of the project/
+docs of the project/
 .vscode/
 android
 ios

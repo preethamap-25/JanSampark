@@ -152,7 +152,6 @@ class _GPostPageState extends State<GPostPage> {
                 },
               ),
               _buildTextField(),
-              _buildPDFPicker(),
               _buildImagePicker(),
               _buildSubmitButton(),
             ],
@@ -214,25 +213,25 @@ class _GPostPageState extends State<GPostPage> {
     );
   }
 
-  Widget _buildPDFPicker() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Attach Your PDF File (Optional)',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        ElevatedButton.icon(
-          onPressed: _pickPDF,
-          icon: Icon(Icons.attach_file),
-          label: Text('Attach PDF'),
-        ),
-        if (_selectedPDF != null)
-          Text('Selected PDF: ${_selectedPDF!.path}'),
-        SizedBox(height: 16),
-      ],
-    );
-  }
+  // Widget _buildPDFPicker() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Text(
+  //         'Attach Your PDF File (Optional)',
+  //         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+  //       ),
+  //       ElevatedButton.icon(
+  //         onPressed: _pickPDF,
+  //         icon: Icon(Icons.attach_file),
+  //         label: Text('Attach PDF'),
+  //       ),
+  //       if (_selectedPDF != null)
+  //         Text('Selected PDF: ${_selectedPDF!.path}'),
+  //       SizedBox(height: 16),
+  //     ],
+  //   );
+  // }
 
   Widget _buildImagePicker() {
     return Column(

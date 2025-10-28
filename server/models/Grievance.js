@@ -1,10 +1,11 @@
 const mongoose = require('mongoose');
+const uuidv4 = require('../utils/uuid'); 
 
 const GrievanceSchema = new mongoose.Schema({
   grievanceID: {
     type: String,
     unique: true,
-    default: () => new mongoose.Types.ObjectId() 
+    default: uuidv4, 
   },
   title: {
     type: String,
@@ -21,12 +22,16 @@ const GrievanceSchema = new mongoose.Schema({
   location: {
     type: String,
   },
-  media: [String],
+  media: {
+    type: [String],
+    default: [],
+  },
 
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+  // 👇 User is linked by their UUID instead of ObjectId
+  userId: {
+    type: String,
     required: true,
+    ref: 'User', 
   },
 
   createdAt: {
