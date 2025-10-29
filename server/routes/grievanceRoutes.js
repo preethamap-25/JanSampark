@@ -3,7 +3,7 @@ const router = express.Router();
 const uuidv4 = require('../utils/uuid');
 const Grievance = require('../models/Grievance');
 const auth = require('../controllers/auth'); 
-const { addGrievance } = require('../controllers/addGrievance');
+const { addGrievance } = require('../controllers/grievanceController');
 
 
 router.post('/', auth, async (req, res) => {
@@ -65,5 +65,6 @@ router.put('/:id/downvote', auth, async (req, res) => {
 });
 
 router.post('/addgrievance', addGrievance);
+router.get('/addgrievance/:id', getGrievanceById);
 
 module.exports = router;

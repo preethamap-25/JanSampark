@@ -42,3 +42,19 @@ exports.addGrievance = async (req, res) => {
     res.status(500).json({ error: 'Failed to submit grievance' });
   }
 };
+
+
+exports.getGrievanceById = async (req, res) => {
+  try {
+    const grievanceId = req.params.id;
+    const grievance = await Grievance.findOne({ grievanceId });
+
+    if (!grievance) {
+      return res.status(404).json({ error: 'Grievance not found' });
+    }
+  }
+  catch (error) {
+    console.error('Error fetching grievance by ID:', error);
+    res.status(500).json({ error: 'Failed to fetch grievance' });
+  } 
+}; 
