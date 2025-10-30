@@ -2,27 +2,33 @@ const express = require('express');
 const router = express.Router();
 const uuidv4 = require('../utils/uuid');
 const Grievance = require('../models/Grievance');
-const auth = require('../controllers/auth'); 
+const auth = require('../middleware/auth'); 
 const { addGrievance } = require('../controllers/grievanceController');
+const { getGrievanceById } = require('../controllers/grievanceController');
+const upload = require('../config/multer');
+// const { verifyToken } = require('../middleware/auth');
 
 
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, upload.array('media', 5), async (req, res) => {
   try {
-    const { title, location, description, category, comments } = req.body;
+    const mediaFiles = req.files.map((file) => {
+      return `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
+    });
 
     const grievance = new Grievance({
-      grievanceId: uuidv4(), 
-      userId: req.user.uuid || req.user.id || uuidv4(), 
-      title,
-      location,
-      description,
-      category,
-      comments: comments || [],
+      title: req.body.title,
+      description: req.body.description,
+      category: req.body.category,
+      location: req.body.location,
+      media: mediaFiles, // store URLs
+      userId: req.user.userId,
     });
 
     await grievance.save();
-    res.status(201).json(grievance);
+    res.status(201).json({ message: 'Grievance submitted successfully', grievance });
+    console.log('Grievance submitted:', grievance);
   } catch (error) {
+    console.error('Error submitting grievance:', error);
     res.status(500).json({ error: 'Server Error', message: error.message });
   }
 });

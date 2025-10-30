@@ -9,7 +9,7 @@ exports.addGrievance = async (req, res) => {
       category,
       location,
       media,
-      userId, // <- UUID from frontend
+      userId, 
     } = req.body;
 
     if (!title || !description || !category || !userId) {
@@ -22,7 +22,6 @@ exports.addGrievance = async (req, res) => {
     }
 
     const grievance = new Grievance({
-      userId: req.user.uuid,
       title,
       description,
       category,

@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+import '../services/auth_service.dart'; // <-- to get JWT
+import '../services/api_service.dart';  // <-- to use authenticated API calls
 
 class GPostPage extends StatefulWidget {
   final Function(Map<String, dynamic>) onGrievanceSubmitted;
@@ -19,13 +24,13 @@ class _GPostPageState extends State<GPostPage> {
   String? _selectedCategory;
   String? _selectedConcern;
   TextEditingController _grievanceController = TextEditingController();
-  
+
   List<String> grievanceTypes = [
     'Complaint',
     'Suggestion',
     'Seeking Guidance/Info'
   ];
-  
+
   List<String> states = [
     'Andhra Pradesh',
     'Maharashtra',
@@ -35,7 +40,7 @@ class _GPostPageState extends State<GPostPage> {
     'West Bengal',
     'Karnataka'
   ];
-  
+
   List<String> districts = [
     'Hyderabad',
     'Vizag',
@@ -45,7 +50,7 @@ class _GPostPageState extends State<GPostPage> {
     'Delhi',
     'Bengaluru'
   ];
-  
+
   List<String> categories = [
     'Public Services',
     'Infrastructure',
@@ -53,7 +58,7 @@ class _GPostPageState extends State<GPostPage> {
     'Education',
     'Environment'
   ];
-  
+
   List<String> concerns = [
     'Road Maintenance',
     'Water Supply',
@@ -61,9 +66,11 @@ class _GPostPageState extends State<GPostPage> {
     'School Facilities',
     'Pollution'
   ];
-  
+
   File? _selectedPDF;
   List<File> _selectedImages = [];
+
+  bool _isSubmitting = false;
 
   Future<void> _pickPDF() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -87,6 +94,94 @@ class _GPostPageState extends State<GPostPage> {
     }
   }
 
+  Future<void> _submitGrievance() async {
+    if (_selectedGrievanceType == null ||
+        _selectedState == null ||
+        _selectedDistrict == null ||
+        _selectedCategory == null ||
+        _selectedConcern == null ||
+        _grievanceController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please fill all fields before submitting.')),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('You must be logged in to submit a grievance.')),
+        );
+        return;
+      }
+
+      // Build form data (multipart request)
+      var uri = Uri.parse('http://10.0.2.2:5000/api/grievances');
+      var request = http.MultipartRequest('POST', uri);
+      request.headers['Authorization'] = 'Bearer $token';
+      request.fields['title'] = _selectedGrievanceType!;
+      request.fields['description'] = _grievanceController.text;
+      request.fields['category'] = _selectedCategory!;
+      request.fields['location'] = '$_selectedDistrict, $_selectedState';
+
+      // Attach images
+      for (var img in _selectedImages) {
+        request.files.add(await http.MultipartFile.fromPath('media', img.path));
+      }
+
+      // Attach PDF (optional)
+      if (_selectedPDF != null) {
+        request.files.add(await http.MultipartFile.fromPath('media', _selectedPDF!.path));
+      }
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 201) {
+        final grievance = json.decode(response.body);
+        widget.onGrievanceSubmitted(grievance);
+
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: Text('Success'),
+            content: Text('Your grievance has been submitted successfully.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop();
+                },
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
+
+        _grievanceController.clear();
+        setState(() {
+          _selectedImages.clear();
+          _selectedPDF = null;
+        });
+      } else {
+        print('Error: ${response.body}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to submit grievance. Try again.')),
+        );
+      }
+    } catch (e) {
+      print('Error submitting grievance: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred. Please try again later.')),
+      );
+    } finally {
+      setState(() => _isSubmitting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -101,59 +196,21 @@ class _GPostPageState extends State<GPostPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildDropdownField(
-                title: 'Type Of Grievance',
-                value: _selectedGrievanceType,
-                items: grievanceTypes,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedGrievanceType = value;
-                  });
-                },
-              ),
-              _buildDropdownField(
-                title: 'State',
-                value: _selectedState,
-                items: states,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedState = value;
-                  });
-                },
-              ),
-              _buildDropdownField(
-                title: 'District',
-                value: _selectedDistrict,
-                items: districts,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedDistrict = value;
-                  });
-                },
-              ),
-              _buildDropdownField(
-                title: 'Grievance Category/Ministry',
-                value: _selectedCategory,
-                items: categories,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCategory = value;
-                  });
-                },
-              ),
-              _buildDropdownField(
-                title: 'Grievance Concerns to?',
-                value: _selectedConcern,
-                items: concerns,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedConcern = value;
-                  });
-                },
-              ),
+              _buildDropdownField('Type Of Grievance', _selectedGrievanceType, grievanceTypes, (v) => setState(() => _selectedGrievanceType = v)),
+              _buildDropdownField('State', _selectedState, states, (v) => setState(() => _selectedState = v)),
+              _buildDropdownField('District', _selectedDistrict, districts, (v) => setState(() => _selectedDistrict = v)),
+              _buildDropdownField('Grievance Category/Ministry', _selectedCategory, categories, (v) => setState(() => _selectedCategory = v)),
+              _buildDropdownField('Grievance Concerns to?', _selectedConcern, concerns, (v) => setState(() => _selectedConcern = v)),
               _buildTextField(),
               _buildImagePicker(),
-              _buildSubmitButton(),
+              Center(
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _submitGrievance,
+                  child: _isSubmitting
+                      ? CircularProgressIndicator(color: Colors.white)
+                      : Text('SUBMIT'),
+                ),
+              ),
             ],
           ),
         ),
@@ -161,29 +218,16 @@ class _GPostPageState extends State<GPostPage> {
     );
   }
 
-  Widget _buildDropdownField({
-    required String title,
-    required String? value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
+  Widget _buildDropdownField(String title, String? value, List<String> items, ValueChanged<String?> onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
+        Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         DropdownButtonFormField<String>(
           value: value,
           hint: Text('Select $title'),
           onChanged: onChanged,
-          items: items.map((item) {
-            return DropdownMenuItem(
-              value: item,
-              child: Text(item),
-            );
-          }).toList(),
+          items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
         ),
         SizedBox(height: 16),
       ],
@@ -194,10 +238,7 @@ class _GPostPageState extends State<GPostPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Type Your Grievance Here',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
+        Text('Type Your Grievance Here', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         TextField(
           controller: _grievanceController,
           maxLines: 6,
@@ -213,34 +254,11 @@ class _GPostPageState extends State<GPostPage> {
     );
   }
 
-  // Widget _buildPDFPicker() {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       Text(
-  //         'Attach Your PDF File (Optional)',
-  //         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-  //       ),
-  //       ElevatedButton.icon(
-  //         onPressed: _pickPDF,
-  //         icon: Icon(Icons.attach_file),
-  //         label: Text('Attach PDF'),
-  //       ),
-  //       if (_selectedPDF != null)
-  //         Text('Selected PDF: ${_selectedPDF!.path}'),
-  //       SizedBox(height: 16),
-  //     ],
-  //   );
-  // }
-
   Widget _buildImagePicker() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Upload Images here',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
+        Text('Upload Images here', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         ElevatedButton.icon(
           onPressed: _pickImages,
           icon: Icon(Icons.image),
@@ -251,70 +269,11 @@ class _GPostPageState extends State<GPostPage> {
             spacing: 8.0,
             runSpacing: 4.0,
             children: _selectedImages.map((image) {
-              return Image.file(
-                image,
-                width: 100,
-                height: 100,
-                fit: BoxFit.cover,
-              );
+              return Image.file(image, width: 100, height: 100, fit: BoxFit.cover);
             }).toList(),
           ),
         SizedBox(height: 16),
       ],
     );
   }
-
-  Widget _buildSubmitButton() {
-    return Center(
-      child: ElevatedButton(
-        onPressed: () {
-          // Create a grievance object with the user's input
-          Map<String, dynamic> grievance = {
-            'type': _selectedGrievanceType,
-            'description': _grievanceController.text,
-            'timestamp': DateTime.now().toIso8601String(),
-            // Add other relevant fields if necessary
-          };
-
-          // Call the callback function to send the grievance to HomePage
-          widget.onGrievanceSubmitted(grievance);
-
-          // Show a popup message
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: Text('Grievance Uploaded'),
-                content: Text('Your grievance has been uploaded successfully.'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      Navigator.of(context).pop(); // Return to HomePage
-                    },
-                    child: Text('OK'),
-                  ),
-                ],
-              );
-            },
-          );
-
-          // Clear the input field
-          _grievanceController.clear();
-        },
-        child: Text('SUBMIT'),
-      ),
-    );
-  }
-}
-
-void main() {
-  runApp(MaterialApp(
-    home: GPostPage(
-      onGrievanceSubmitted: (grievance) {
-        // Handle the submitted grievance here
-        print(grievance);
-      },
-    ),
-  ));
 }

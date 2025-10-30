@@ -24,16 +24,15 @@ exports.register = async (req, res) => {
   try {
     // Check for duplicate users
     let existingUser = await User.findOne({
-      $or: [{ email }, { username }, { aadhar }, { voterId }]
+      $or: [{ email }, { username }, { aadhar }, { voterId }, { phone }]
     });
 
     if (existingUser) {
       return res.status(400).json({ msg: 'User already exists with provided credentials' });
     }
 
-    // Create new user with generated userID
     const user = new User({
-      userID: uuidv4(), // Generate unique userID
+      userId: uuidv4(), 
       email,
       username,
       password,
@@ -80,9 +79,8 @@ exports.login = async (req, res) => {
       return res.status(400).json({ msg: 'Invalid credentials' });
     }
 
-    // The same userID will be fetched here for every login attempt
     const payload = {
-      userID: user.userID,     // Include userID in JWT
+      userId: user.userId,
       username: user.username
     };
     

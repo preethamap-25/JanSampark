@@ -14,7 +14,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   bool isUser = true;
-  bool rememberMe = false;
+  bool rememberMe = true;
   bool _isLoading = false;
   bool _obscurePassword = true;
 
@@ -30,7 +30,7 @@ class _LoginPageState extends State<LoginPage> {
     try {
       setState(() => _isLoading = true);
       final response = await http.post(
-        Uri.parse('http://localhost:5000/api/auth/login'),
+        Uri.parse('http://10.0.2.2:5000/api/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'username': _usernameController.text,

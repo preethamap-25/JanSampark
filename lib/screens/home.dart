@@ -5,9 +5,8 @@ import 'communities.dart';
 import 'gpost.dart';
 import 'profile.dart';
 import 'package:intl/intl.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:jan_sampark/services/auth_service.dart';
+import 'package:jan_sampark/services/api_service.dart'; 
 
 class HomePage extends StatefulWidget {
   @override
@@ -21,7 +20,6 @@ class _HomePageState extends State<HomePage> {
 
   bool _isLoading = true;
 
-  // Helper to coerce dynamic numeric values safely to int
   int _asInt(dynamic v) {
     if (v == null) return 0;
     if (v is int) return v;
@@ -39,16 +37,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> fetchGrievances() async {
     try {
-      final token = await AuthService.getToken();
-      final headers = {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      };
-
-      final response = await http.get(
-        Uri.parse('http://localhost:5000/api/grievances'),
-        headers: headers,
-      );
+      final response = await ApiService.get('grievances'); 
 
       if (response.statusCode == 200) {
         List<dynamic> data = jsonDecode(response.body);
@@ -233,7 +222,6 @@ class _HomePageState extends State<HomePage> {
             children: [
               Row(
                 children: [
-                  // Upvote Button
                   IconButton(
                     icon: Icon(
                       (grievance['hasUpvoted'] == true)
@@ -243,21 +231,17 @@ class _HomePageState extends State<HomePage> {
                     ),
                     onPressed: () {
                       setState(() {
-            // Normalize values
-            int up = _asInt(grievance['upvotes']);
-            int down = _asInt(grievance['downvotes']);
+                        int up = _asInt(grievance['upvotes']);
+                        int down = _asInt(grievance['downvotes']);
                         bool hasUp = grievance['hasUpvoted'] == true;
                         bool hasDown = grievance['hasDownvoted'] == true;
 
                         if (hasUp) {
-                          // remove upvote
                           up = (up > 0) ? up - 1 : 0;
                           hasUp = false;
                         } else {
-                          // add upvote
                           up = up + 1;
                           hasUp = true;
-                          // if previously downvoted, remove that downvote
                           if (hasDown) {
                             down = (down > 0) ? down - 1 : 0;
                             hasDown = false;
@@ -272,8 +256,6 @@ class _HomePageState extends State<HomePage> {
                     },
                   ),
                   Text((grievance['upvotes'] ?? 0).toString()),
-
-                  // Downvote Button
                   IconButton(
                     icon: Icon(
                       (grievance['hasDownvoted'] == true)
@@ -283,20 +265,17 @@ class _HomePageState extends State<HomePage> {
                     ),
                     onPressed: () {
                       setState(() {
-            int up = _asInt(grievance['upvotes']);
-            int down = _asInt(grievance['downvotes']);
+                        int up = _asInt(grievance['upvotes']);
+                        int down = _asInt(grievance['downvotes']);
                         bool hasUp = grievance['hasUpvoted'] == true;
                         bool hasDown = grievance['hasDownvoted'] == true;
 
                         if (hasDown) {
-                          // remove downvote
                           down = (down > 0) ? down - 1 : 0;
                           hasDown = false;
                         } else {
-                          // add downvote
                           down = down + 1;
                           hasDown = true;
-                          // if previously upvoted, remove that upvote
                           if (hasUp) {
                             up = (up > 0) ? up - 1 : 0;
                             hasUp = false;
