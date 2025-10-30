@@ -6,7 +6,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../services/auth_service.dart'; // <-- to get JWT
-import '../services/api_service.dart';  // <-- to use authenticated API calls
 
 class GPostPage extends StatefulWidget {
   final Function(Map<String, dynamic>) onGrievanceSubmitted;
@@ -71,18 +70,6 @@ class _GPostPageState extends State<GPostPage> {
   List<File> _selectedImages = [];
 
   bool _isSubmitting = false;
-
-  Future<void> _pickPDF() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-    );
-    if (result != null) {
-      setState(() {
-        _selectedPDF = File(result.files.single.path!);
-      });
-    }
-  }
 
   Future<void> _pickImages() async {
     final ImagePicker _picker = ImagePicker();
