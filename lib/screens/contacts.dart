@@ -2,38 +2,44 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-// Data model
+// ===============================
+// UPDATED DATA MODEL (MATCHES MONGO)
+// ===============================
 class DepartmentContact {
-  final String title;
-  final List<String> issues;
-  final String contactNumber;
+  final String id;
+  final String department;
+  final String officerName;
+  final String phone;
   final String email;
   final String address;
-  final String officerName;
 
   DepartmentContact({
-    required this.title,
-    required this.issues,
-    required this.contactNumber,
+    required this.id,
+    required this.department,
+    required this.officerName,
+    required this.phone,
     required this.email,
     required this.address,
-    required this.officerName,
   });
 
   factory DepartmentContact.fromJson(Map<String, dynamic> json) =>
       DepartmentContact(
-        title: json['title'],
-        issues: List<String>.from(json['issues']),
-        contactNumber: json['contactNumber'],
-        email: json['email'],
-        address: json['address'],
-        officerName: json['officerName'],
+        id: json['_id'] ?? '',
+        department: json['department'] ?? '',
+        officerName: json['officerName'] ?? '',
+        phone: json['phone'] ?? '',
+        email: json['email'] ?? '',
+        address: json['address'] ?? '',
       );
 }
 
-// Network fetch for contacts (replace with your API endpoint)
+// ===============================
+// NETWORK CALL
+// ===============================
 Future<List<DepartmentContact>> fetchContacts() async {
-  final response = await http.get(Uri.parse('http://10.0.2.2:5000/api/contacts'));
+  final response =
+  await http.get(Uri.parse('http://10.0.2.2:5000/api/contacts'));
+
   if (response.statusCode == 200) {
     final List<dynamic> data = json.decode(response.body);
     return data.map((item) => DepartmentContact.fromJson(item)).toList();
@@ -42,14 +48,14 @@ Future<List<DepartmentContact>> fetchContacts() async {
   }
 }
 
-// Main Contact Page (styling unchanged)
+// ===============================
+// UI: CONTACT PAGE
+// ===============================
 class ContactPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Contact Page'),
-      ),
+      appBar: AppBar(title: Text('Contact Page')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: FutureBuilder<List<DepartmentContact>>(
@@ -58,19 +64,14 @@ class ContactPage extends StatelessWidget {
             if (!snapshot.hasData) {
               return Center(child: CircularProgressIndicator());
             }
+
             final contacts = snapshot.data!;
+
             return ListView(
               children: [
                 SearchBox(),
                 SizedBox(height: 16),
-                ...contacts.map((dept) => ContactCard(
-                  title: dept.title,
-                  issues: dept.issues,
-                  contactNumber: dept.contactNumber,
-                  email: dept.email,
-                  address: dept.address,
-                  officerName: dept.officerName,
-                )),
+                ...contacts.map((contact) => ContactCard(contact: contact)),
               ],
             );
           },
@@ -80,7 +81,9 @@ class ContactPage extends StatelessWidget {
   }
 }
 
-// SearchBox (unchanged)
+// ===============================
+// SEARCH BOX
+// ===============================
 class SearchBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -109,56 +112,35 @@ class SearchBox extends StatelessWidget {
   }
 }
 
-// ContactCard (to show all details; styling unchanged)
-class ContactCard extends StatefulWidget {
-  final String title;
-  final List<String> issues;
-  final String contactNumber;
-  final String email;
-  final String address;
-  final String officerName;
+// ===============================
+// CONTACT CARD (NO ISSUES LIST)
+// ===============================
+class ContactCard extends StatelessWidget {
+  final DepartmentContact contact;
 
-  const ContactCard({
-    Key? key,
-    required this.title,
-    required this.issues,
-    required this.contactNumber,
-    required this.email,
-    required this.address,
-    required this.officerName,
-  }) : super(key: key);
+  const ContactCard({Key? key, required this.contact}) : super(key: key);
 
-  @override
-  _ContactCardState createState() => _ContactCardState();
-}
-
-class _ContactCardState extends State<ContactCard> {
-  bool _isExpanded = false;
-
-  void _showContactDetails(BuildContext context, String issue) {
+  void _showDetails(BuildContext context) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (_) {
         return AlertDialog(
-          title: Text(issue),
+          title: Text(contact.department),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Department: ${widget.title}'),
-              Text('Officer: ${widget.officerName}'),
-              Text('Contact: ${widget.contactNumber}'),
-              Text('Email: ${widget.email}'),
-              Text('Address: ${widget.address}'),
+              Text("Officer: ${contact.officerName}"),
+              Text("Contact: ${contact.phone}"),
+              Text("Email: ${contact.email}"),
+              Text("Address: ${contact.address}"),
             ],
           ),
           actions: [
             TextButton(
               child: Text('Close'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
+              onPressed: () => Navigator.pop(context),
+            )
           ],
         );
       },
@@ -168,39 +150,25 @@ class _ContactCardState extends State<ContactCard> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: EdgeInsets.symmetric(vertical: 8.0),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10.0),
-      ),
-      elevation: 2.0,
-      child: ExpansionTile(
+      margin: EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      elevation: 3,
+      child: ListTile(
         title: Text(
-          widget.title,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          contact.department,
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        initiallyExpanded: _isExpanded,
-        onExpansionChanged: (bool expanded) {
-          setState(() => _isExpanded = expanded);
-        },
-        children: widget.issues
-            .map((issue) => ListTile(
-                  title: Text(issue),
-                  leading: Icon(Icons.chevron_right),
-                  onTap: () {
-                    _showContactDetails(context, issue);
-                  },
-                ))
-            .toList(),
+        subtitle: Text(contact.officerName),
+        trailing: Icon(Icons.chevron_right),
+        onTap: () => _showDetails(context),
       ),
     );
   }
 }
 
-// Main entry (unchanged)
+// ===============================
+// MAIN ENTRY
+// ===============================
 void main() {
-  runApp(MaterialApp(
-    home: ContactPage(),
-  ));
+  runApp(MaterialApp(home: ContactPage()));
 }

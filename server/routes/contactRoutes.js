@@ -1,4 +1,4 @@
-// server.js
+//contactRoutes.js
 const express = require('express');
 const router = express.Router();
 const cron = require('node-cron');
@@ -15,3 +15,6 @@ router.get("/", async (req, res) => {
 //   await fetchAndUpdateContacts();
 //   console.log('Contact list refreshed!');
 // });
+
+
+module.exports = router;
